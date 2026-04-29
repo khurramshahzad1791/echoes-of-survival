@@ -1,0 +1,56 @@
+name: Daily Survival Video Pipeline
+
+on:
+  schedule:
+    # Runs daily at 2:00 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  generate-videos:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      
+      - name: Agent 1 - Generate Scripts
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python agent_1_script_generator.py
+      
+      - name: Agent 2 - Generate Images
+        env:
+          LEONARDO_API_KEY: ${{ secrets.LEONARDO_API_KEY }}
+        run: python agent_2_image_generator.py
+      
+      - name: Agent 3 - Animation (Colab trigger)
+        run: |
+          # Trigger Colab notebook via webhook
+          curl -X POST "https://your-colab-webhook-url.googleusercontent.com/run" \
+            -H "Content-Type: application/json" \
+            -d '{"notebook":"animation_agent"}'
+      
+      - name: Agent 4 - Add Sounds
+        env:
+          PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
+        run: python agent_4_sound_designer.py
+      
+      - name: Agent 5 - Edit Videos
+        run: python agent_5_video_editor.py
+      
+      - name: Agent 6 - Upload to YouTube
+        env:
+          YOUTUBE_TOKEN: ${{ secrets.YOUTUBE_TOKEN }}
+        run: python agent_6_youtube_uploader.py
+      
+      - name: Upload artifacts (backup)
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-videos
+          path: final_videos/
